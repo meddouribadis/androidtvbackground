@@ -1,6 +1,12 @@
 import resource
 import sys
 import plex
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+MEMORY_LIMIT = os.getenv('MEMORY_LIMIT')
 
 # Set the order_by parameter to 'aired' or 'added'
 order_by = 'added'
@@ -16,7 +22,7 @@ def memory_limit_half():
     """Limit max memory usage to half."""
     soft, hard = resource.getrlimit(resource.RLIMIT_AS)
     # Convert KiB to bytes, and divide in two to half
-    resource.setrlimit(resource.RLIMIT_AS, (int(get_memory() * 1024 / 2), hard))
+    resource.setrlimit(resource.RLIMIT_AS, (int(get_memory() * 1024 / MEMORY_LIMIT), hard))
 
 def get_memory():
     with open('/proc/meminfo', 'r') as mem:
