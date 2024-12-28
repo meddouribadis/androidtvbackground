@@ -10,12 +10,6 @@ import shutil
 import textwrap
 from dotenv import load_dotenv
 import numpy as np
-import scipy
-import scipy.misc
-import scipy.cluster
-import scipy.ndimage
-import scipy.sparse
-import binascii
 
 load_dotenv()
 
@@ -104,14 +98,16 @@ def download_latest_media(order_by, limit, media_type):
                     # Open the background image with PIL
                     image = Image.open(background_filename)
                     print(filename_safe_title)
-                    get_accent_color(image)
+                    new_color = get_accent_color(image)
                     bckg = Image.open(os.path.join(os.path.dirname(__file__),"bckg.png"))
-                    
+                    bckg = ajust_background_color(new_color, bckg)
+
                     # Resize the image to have a height of 1080 pixels
                     image = resize_image(image, 1500)
 
                     # Open overlay image
                     overlay = Image.open(os.path.join(os.path.dirname(__file__),"overlay.png"))
+                    overlay = ajust_background_color(new_color, overlay)
                     plexlogo = Image.open(os.path.join(os.path.dirname(__file__),"plexlogo.png"))
 
                     bckg.paste(image, (1175, 0))
@@ -220,27 +216,38 @@ def download_latest_media(order_by, limit, media_type):
         # Adding a small delay to give the server some time to respond
         time.sleep(1)
 
-def get_accent_color(image):
-    # Resize the image to a small size to speed up the clustering
-    im = image.copy() 
-    im.thumbnail((100, 100))
-    ar = np.asarray(im)
-    shape = ar.shape
-    ar = ar.reshape(np.prod(shape[:2]), shape[2]).astype(float)
+def get_accent_color(image, palette_size=16):
+    # Resize image to speed up processing
+    img = image.copy()
+    img.thumbnail((100, 100))
 
-    print('finding clusters')
-    codes, dist = scipy.cluster.vq.kmeans(ar, NUM_CLUSTERS)
-    print('cluster centres:\n', codes)
-    vecs, dist = scipy.cluster.vq.vq(ar, codes)         # assign codes
-    print (vecs)
-    counts, bins = np.histogram(vecs, len(codes))    # count occurrences
-    print ('counts', counts)
+    # Reduce colors (uses k-means internally)
+    paletted = img.convert('P', palette=Image.ADAPTIVE, colors=palette_size)
 
-    index_max = np.argmax(counts)                    # find most frequent
-    peak = codes[index_max]
-    colour = binascii.hexlify(bytearray(int(c) for c in peak)).decode('ascii')
-    print('most frequent is %s (#%s)' % (peak, colour))
-    return colour
+    # Find the color that occurs most often
+    palette = paletted.getpalette()
+    color_counts = sorted(paletted.getcolors(), reverse=True)
+    palette_index = color_counts[0][1]
+    dominant_color = palette[palette_index*3:palette_index*3+3]
+    print(f"Dominant color: {dominant_color}")
+    return dominant_color
+
+def ajust_background_color(replacement_color, image):
+    img = image.convert('RGBA')
+    
+    d = img.getdata()
+    new_image = []
+    
+    for item in d:
+        new_red = item[0] + (replacement_color[0] - item[0]) * 0.7
+        new_green = item[1] + (replacement_color[1] - item[1]) * 0.7
+        new_blue = item[2] + (replacement_color[2] - item[2]) * 0.7
+        new_image.append((new_red, new_green, new_blue, item[3]))
+    
+    new_image = np.array(new_image, dtype=np.uint8).reshape(img.size[1], img.size[0], 4)
+    img2 = Image.fromarray(new_image, 'RGBA')
+    #img2.show()
+    return img2
 
 # Download the latest movies according to the specified order and limit
 if download_movies:
