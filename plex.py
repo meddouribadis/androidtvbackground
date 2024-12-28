@@ -9,12 +9,21 @@ import re
 import shutil
 import textwrap
 from dotenv import load_dotenv
+import numpy as np
+import scipy
+import scipy.misc
+import scipy.cluster
+import scipy.ndimage
+import scipy.sparse
+import binascii
 
 load_dotenv()
 
 
 PLEX_URL = os.getenv('PLEX_URL')
 PLEX_TOKEN = os.getenv('PLEX_API_KEY')
+OFFSET = 150
+NUM_CLUSTERS = 5
 
 truetype_url = 'https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Light.ttf'
 
@@ -94,6 +103,8 @@ def download_latest_media(order_by, limit, media_type):
                     
                     # Open the background image with PIL
                     image = Image.open(background_filename)
+                    print(filename_safe_title)
+                    get_accent_color(image)
                     bckg = Image.open(os.path.join(os.path.dirname(__file__),"bckg.png"))
                     
                     # Resize the image to have a height of 1080 pixels
@@ -208,6 +219,28 @@ def download_latest_media(order_by, limit, media_type):
 
         # Adding a small delay to give the server some time to respond
         time.sleep(1)
+
+def get_accent_color(image):
+    # Resize the image to a small size to speed up the clustering
+    im = image.copy() 
+    im.thumbnail((100, 100))
+    ar = np.asarray(im)
+    shape = ar.shape
+    ar = ar.reshape(np.prod(shape[:2]), shape[2]).astype(float)
+
+    print('finding clusters')
+    codes, dist = scipy.cluster.vq.kmeans(ar, NUM_CLUSTERS)
+    print('cluster centres:\n', codes)
+    vecs, dist = scipy.cluster.vq.vq(ar, codes)         # assign codes
+    print (vecs)
+    counts, bins = np.histogram(vecs, len(codes))    # count occurrences
+    print ('counts', counts)
+
+    index_max = np.argmax(counts)                    # find most frequent
+    peak = codes[index_max]
+    colour = binascii.hexlify(bytearray(int(c) for c in peak)).decode('ascii')
+    print('most frequent is %s (#%s)' % (peak, colour))
+    return colour
 
 # Download the latest movies according to the specified order and limit
 if download_movies:
