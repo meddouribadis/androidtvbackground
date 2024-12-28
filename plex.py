@@ -10,9 +10,11 @@ import shutil
 import textwrap
 from dotenv import load_dotenv
 import numpy as np
+import mem_mangment # Comment if Windows
+
+mem_mangment.main() # Comment if Windows
 
 load_dotenv()
-
 
 PLEX_URL = os.getenv('PLEX_URL')
 PLEX_TOKEN = os.getenv('PLEX_API_KEY')
@@ -243,21 +245,25 @@ def get_accent_color(image, palette_size=16):
     print(f"Dominant color: {dominant_color}")
     return dominant_color
 
+def colorimetry(i, y):
+    return ((i[0] + (y[0] - i[0]) * ACCENT_COLOR_INTESITY), (i[1] + (y[1] - i[1]) * ACCENT_COLOR_INTESITY), (i[2] + (y[2] - i[2]) * ACCENT_COLOR_INTESITY), i[3])
+
 def ajust_background_color(replacement_color, image):
     img = image.convert('RGBA')
-    
-    d = img.getdata()
-    new_image = []
-    
-    for item in d:
-        new_red = item[0] + (replacement_color[0] - item[0]) * ACCENT_COLOR_INTESITY
-        new_green = item[1] + (replacement_color[1] - item[1]) * ACCENT_COLOR_INTESITY
-        new_blue = item[2] + (replacement_color[2] - item[2]) * ACCENT_COLOR_INTESITY
-        new_image.append((new_red, new_green, new_blue, item[3]))
-    
-    new_image = np.array(new_image, dtype=np.uint8).reshape(img.size[1], img.size[0], 4)
-    img2 = Image.fromarray(new_image, 'RGBA')
-    #img2.show()
+    data = np.array(img)
+
+    #start_time = time.time()
+    res = np.stack(
+        (
+            (((1 - ACCENT_COLOR_INTESITY) * data[:,:,0]) + (ACCENT_COLOR_INTESITY * replacement_color[0])),
+            (((1 - ACCENT_COLOR_INTESITY) * data[:,:,1]) + (ACCENT_COLOR_INTESITY * replacement_color[1])),
+            (((1 - ACCENT_COLOR_INTESITY) * data[:,:,2]) + (ACCENT_COLOR_INTESITY * replacement_color[2])),
+            data[:,:, 3]
+        ), axis=-1)
+
+    #print("--- %s seconds ---" % (time.time() - start_time))
+    img2 = Image.fromarray(res.astype('uint8'), 'RGBA')
+    #print("--- %s seconds ---" % (time.time() - start_time))
     return img2
 
 # Download the latest movies according to the specified order and limit
