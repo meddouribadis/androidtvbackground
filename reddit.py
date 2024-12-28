@@ -28,6 +28,11 @@ print(f'REDDIT_SUBREDDIT: {REDDIT_SUBREDDIT}')
 
 subreddit = reddit.subreddit(REDDIT_SUBREDDIT)
 
+# Clean old posts
+for submission in subreddit.hot(limit=50):
+    print(f'Delete {submission.title}')
+    submission.delete()
+    
 # iterate over files in
 # that directory
 for filename in os.listdir(DIRECTORY):
@@ -36,10 +41,10 @@ for filename in os.listdir(DIRECTORY):
     if os.path.isfile(f):
         title = Path(f).stem
         image = f
-        print (title)
-        for submission in subreddit.search(title, sort='relevance', time_filter='all'):
-            print(submission.title, submission.id)
-            submission.delete()
+        #print (title)
+        #for submission in subreddit.search(title, sort='relevance', time_filter='all'):
+        #    print(submission.title, submission.id)
+        #    submission.delete()
         print(f'Uploading: {title}')
         subreddit.submit_image(title, image)
         time.sleep(2)
