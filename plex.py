@@ -8,7 +8,13 @@ import unicodedata
 import re
 import shutil
 import textwrap
+from dotenv import load_dotenv
 
+load_dotenv()
+
+
+PLEX_URL = os.getenv('PLEX_URL')
+PLEX_TOKEN = os.getenv('PLEX_API_KEY')
 
 truetype_url = 'https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Light.ttf'
 
@@ -45,8 +51,10 @@ def clean_filename(filename):
     return cleaned_filename
 
 def download_latest_media(order_by, limit, media_type):
-    baseurl = 'http://XXXX:32400'
-    token = 'XXXX'
+    baseurl = PLEX_URL
+    token = PLEX_TOKEN
+    print(f"Base URL: {baseurl}")
+    print(f"Token: {token}")
     plex = PlexServer(baseurl, token)
 
     os.makedirs(background_dir, exist_ok=True)
