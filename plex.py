@@ -15,7 +15,7 @@ load_dotenv()
 
 PLEX_URL = os.getenv('PLEX_URL')
 PLEX_TOKEN = os.getenv('PLEX_API_KEY')
-OFFSET = 150
+TEXT_TOP_OFFSET = int(os.getenv('TEXT_TOP_OFFSET'))
 ACCENT_COLOR_INTESITY = 0.7
 NUM_CLUSTERS = 5
 
@@ -109,10 +109,16 @@ def download_latest_media(order_by, limit, media_type):
                     overlay = Image.open(os.path.join(os.path.dirname(__file__),"overlay.png"))
                     overlay = ajust_background_color(new_color, overlay)
                     plexlogo = Image.open(os.path.join(os.path.dirname(__file__),"plexlogo.png"))
-
+                    
+                    dominant_red = new_color[0]
+                    dominant_green = new_color[1]
+                    dominant_blue = new_color[2]
+                    if (dominant_red*0.299 + dominant_green*0.587 + dominant_blue*0.114) > 186: # Bright color, use black shadow
+                        plexlogo = Image.open(os.path.join(os.path.dirname(__file__),"plexlogo_inverted.png"))
+                    
                     bckg.paste(image, (1175, 0))
                     bckg.paste(overlay, (1175,0), overlay)
-                    bckg.paste(plexlogo, (680, 970),plexlogo)
+                    bckg.paste(plexlogo, (680, TEXT_TOP_OFFSET + 970), plexlogo)
 
                     # Add text on top of the image with shadow effect
                     draw = ImageDraw.Draw(bckg)
@@ -159,11 +165,11 @@ def download_latest_media(order_by, limit, media_type):
                     metadata_text_width, metadata_text_height = draw.textlength(info_text, font=font_metadata), draw.textlength(info_text, font=font_metadata)
                     
                     #Position
-                    title_position = (200, 540)
-                    summary_position = (210, 830)
-                    info_position = (210, 520)
-                    metadata_position = (210, 920)
-                    custom_position = (210, 950)
+                    title_position = (200, TEXT_TOP_OFFSET + 540)
+                    summary_position = (210, TEXT_TOP_OFFSET + 830)
+                    info_position = (210, TEXT_TOP_OFFSET + 520)
+                    metadata_position = (210, TEXT_TOP_OFFSET + 920)
+                    custom_position = (210, TEXT_TOP_OFFSET + 950)
                     shadow_offset = 2
                     
                     #Color
@@ -173,10 +179,7 @@ def download_latest_media(order_by, limit, media_type):
                     summary_color = (204,204,204)  # Grey color for the summary
                     metadata_color = "white"
                     
-                    red = new_color[0]
-                    green = new_color[1]
-                    blue = new_color[2]
-                    if (red*0.299 + green*0.587 + blue*0.114) > 186: # Bright color, use black shadow
+                    if (dominant_red*0.299 + dominant_green*0.587 + dominant_blue*0.114) > 186: # Bright color, use black shadow
                         shadow_color = (99,99,99)
                         main_color = "black"
                         info_color = "black"
