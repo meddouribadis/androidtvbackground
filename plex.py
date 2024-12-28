@@ -10,9 +10,6 @@ import shutil
 import textwrap
 from dotenv import load_dotenv
 import numpy as np
-import mem_mangment # Comment if Windows
-
-mem_mangment.main() # Comment if Windows
 
 load_dotenv()
 
