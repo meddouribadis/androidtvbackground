@@ -17,6 +17,7 @@ load_dotenv()
 PLEX_URL = os.getenv('PLEX_URL')
 PLEX_TOKEN = os.getenv('PLEX_API_KEY')
 OFFSET = 150
+ACCENT_COLOR_INTESITY = 0.7
 NUM_CLUSTERS = 5
 
 truetype_url = 'https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Light.ttf'
@@ -165,13 +166,23 @@ def download_latest_media(order_by, limit, media_type):
                     metadata_position = (210, 920)
                     custom_position = (210, 950)
                     shadow_offset = 2
-
+                    
                     #Color
                     shadow_color = "black"
                     main_color = "white"
                     info_color = "white"
-                    summary_color = (150,150,150)  # Grey color for the summary
+                    summary_color = (204,204,204)  # Grey color for the summary
                     metadata_color = "white"
+                    
+                    red = new_color[0]
+                    green = new_color[1]
+                    blue = new_color[2]
+                    if (red*0.299 + green*0.587 + blue*0.114) > 186: # Bright color, use black shadow
+                        shadow_color = (99,99,99)
+                        main_color = "black"
+                        info_color = "black"
+                        summary_color = (99,99,99)
+                        metadata_color = "black"
 
                     # Draw shadow for title
                     draw.text((title_position[0] + shadow_offset, title_position[1] + shadow_offset), title_text, font=font_title, fill=shadow_color)
@@ -239,9 +250,9 @@ def ajust_background_color(replacement_color, image):
     new_image = []
     
     for item in d:
-        new_red = item[0] + (replacement_color[0] - item[0]) * 0.7
-        new_green = item[1] + (replacement_color[1] - item[1]) * 0.7
-        new_blue = item[2] + (replacement_color[2] - item[2]) * 0.7
+        new_red = item[0] + (replacement_color[0] - item[0]) * ACCENT_COLOR_INTESITY
+        new_green = item[1] + (replacement_color[1] - item[1]) * ACCENT_COLOR_INTESITY
+        new_blue = item[2] + (replacement_color[2] - item[2]) * ACCENT_COLOR_INTESITY
         new_image.append((new_red, new_green, new_blue, item[3]))
     
     new_image = np.array(new_image, dtype=np.uint8).reshape(img.size[1], img.size[0], 4)
